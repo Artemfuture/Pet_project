@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLAP Analytics | Сводка по годам</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Chart.js для графиков -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2f7 0%, #d9e2ec 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* главная карточка */
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: fadeSlideUp 0.45s ease-out;
+        }
+
+        /* шапка с градиентом */
+        .header {
+            background: linear-gradient(112deg, #0f2b3d 0%, #1b4a6e 100%);
+            padding: 2rem 2rem 1.8rem 2rem;
+            color: white;
+            position: relative;
+        }
+
+        .header::after {
+            content: "📅";
+            font-size: 7rem;
+            opacity: 0.08;
+            position: absolute;
+            bottom: -0.5rem;
+            right: 1.5rem;
+            pointer-events: none;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(-3px);
+        }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 i {
+            font-size: 2rem;
+        }
+
+        .stats-badge {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 40px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* секция с графиками */
+        .charts-section {
+            padding: 2rem;
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f8;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .chart-card {
+            background: #f9fafc;
+            border-radius: 1.25rem;
+            padding: 1.2rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .chart-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .chart-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-title i {
+            color: #3b82f6;
+        }
+
+        canvas {
+            max-height: 300px;
+            width: 100%;
+        }
+
+        /* карточки метрик */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 1.25rem;
+            padding: 1.2rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e4a76, #0f2b3d);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .metric-icon i {
+            font-size: 1.3rem;
+            color: white;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
+
+        /* панель действий */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .records-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: linear-gradient(135deg, #1e4a76, #0f2b3d);
+            color: white;
+            padding: 0.7rem 1.3rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn-secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .action-btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        /* таблица */
+        .table-wrapper {
+            padding: 2rem;
+            overflow-x: auto;
+            background: #ffffff;
+        }
+
+        .years-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+        }
+
+        .years-table thead tr {
+            background: #f8fafc;
+        }
+
+        .years-table th {
+            text-align: left;
+            padding: 1rem 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f8fafc;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .years-table th:hover {
+            background: #eef2ff;
+        }
+
+        .years-table td {
+            padding: 1rem 1rem;
+            border-bottom: 1px solid #f0f2f5;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .years-table tbody tr {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .years-table tbody tr:hover {
+            background: linear-gradient(90deg, #fefce8 0%, #fff8e7 100%);
+            transform: scale(1.01);
+        }
+
+        .year-cell {
+            font-weight: 700;
+            color: #0f2b3d;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .year-cell i {
+            color: #f59e0b;
+            font-size: 1.2rem;
+        }
+
+        .number-cell {
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+
+        .badge-visits {
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e40af;
+            display: inline-block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .sort-icon {
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: fadeSlideUp 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1.5rem;
+            }
+
+            .charts-section,
+            .table-wrapper {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .years-table th,
+            .years-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .metric-value {
+                font-size: 1.3rem;
+            }
+
+            .action-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="header-top">
+                    <a href="/" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>На главную</span>
+                    </a>
+                    <a href="{% url 'visits_by_year_csv' %}" class="action-btn action-btn-secondary">
+                        <i class="fas fa-file-csv"></i>
+                        <span>Экспорт в CSV</span>
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+                <h1>
+                    <i class="fas fa-calendar-alt"></i>
+                    Сводка по годам
+                </h1>
+                <div class="stats-badge">
+                    <span class="stat-item"><i class="fas fa-chart-line"></i> Годовая динамика</span>
+                    <span class="stat-item"><i class="fas fa-clock"></i> Тренды посещаемости</span>
+                    <span class="stat-item"><i class="fas fa-chart-bar"></i> Сезонность</span>
+                </div>
+            </div>
+
+            {% if visits_year %}
+            <div class="charts-section">
+                <div class="charts-grid">
+                    <div class="chart-card">
+                        <div class="chart-title">
+                            <i class="fas fa-chart-line"></i>
+                            <span>Динамика посещений по годам</span>
+                        </div>
+                        <canvas id="visitsChart"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-title">
+                            <i class="fas fa-hourglass-half"></i>
+                            <span>Среднее время посещений (мин)</span>
+                        </div>
+                        <canvas id="durationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <!-- метрики -->
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="metric-label">Период</div>
+                        <div class="metric-value" id="yearRange">—</div>
+                        <div class="metric-sub">лет аналитики</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="metric-label">Всего посещений</div>
+                        <div class="metric-value" id="totalVisits">—</div>
+                        <div class="metric-sub">за весь период</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="metric-label">Ср. годовой рост</div>
+                        <div class="metric-value" id="avgGrowth">—</div>
+                        <div class="metric-sub">посещаемости</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="metric-label">Пиковый год</div>
+                        <div class="metric-value" id="peakYear">—</div>
+                        <div class="metric-sub">макс. посещений</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-icon">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div class="metric-label">Всего лет</div>
+                        <div class="metric-value" id="totalYears">{{ visits_year|length }}</div>
+                        <div class="metric-sub">в аналитике</div>
+                    </div>
+                </div>
+
+                <!-- Панель действий -->
+                <div class="action-bar">
+                    <div class="records-info">
+                        <i class="fas fa-table"></i> Всего записей: <span id="totalRecords">{{ visits_year|length
+                            }}</span>
+                    </div>
+                    <button id="copyTableBtn" class="action-btn action-btn-secondary">
+                        <i class="fas fa-copy"></i>
+                        Копировать таблицу
+                    </button>
+                </div>
+
+                <table class="years-table" id="yearsTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="year"><i class="fas fa-calendar"></i> Год <span class="sort-icon"><i
+                                        class="fas fa-sort"></i></span></th>
+                            <th data-sort="visits"><i class="fas fa-door-open"></i> Количество посещений <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="avg"><i class="fas fa-hourglass-half"></i> Среднее время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="min"><i class="fas fa-fast-backward"></i> Мин. время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="max"><i class="fas fa-fast-forward"></i> Макс. время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th><i class="fas fa-chart-line"></i> Динамика</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for y in visits_year %}
+                        <tr data-year="{{ y.year }}" data-visits="{{ y.count_visits }}"
+                            data-avg="{% if y.avg_duration %}{{ y.avg_duration }}{% else %}0{% endif %}"
+                            data-min="{% if y.min_duration %}{{ y.min_duration }}{% else %}0{% endif %}"
+                            data-max="{% if y.max_duration %}{{ y.max_duration }}{% else %}0{% endif %}">
+                            <td class="year-cell">
+                                <i class="fas fa-calendar-alt"></i>
+                                {{ y.year }}
+                            </td>
+                            <td class="number-cell">
+                                <span class="badge-visits">
+                                    <i class="fas fa-chart-simple"></i> {{ y.count_visits }}
+                                </span>
+                            </td>
+                            <td class="number-cell">
+                                {% if y.avg_duration %}
+                                {{ y.avg_duration|floatformat:1 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="number-cell">
+                                {% if y.min_duration %}
+                                {{ y.min_duration|floatformat:0 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="number-cell">
+                                {% if y.max_duration %}
+                                {{ y.max_duration|floatformat:0 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="number-cell trend-cell">
+                                <span class="trend-indicator"></span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <h3>Нет данных</h3>
+                <p>Информация о посещениях по годам отсутствует</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rows = Array.from(document.querySelectorAll('#tableBody tr'));
+            if (rows.length === 0) return;
+
+            // Собираем данные для графиков и метрик
+            const years = [];
+            const visits = [];
+            const avgDurations = [];
+            let totalVisits = 0;
+            let maxVisits = 0;
+            let peakYear = '';
+
+            rows.forEach(row => {
+                const year = row.dataset.year || '';
+                const visitsCount = parseInt(row.dataset.visits) || 0;
+                const avgVal = parseFloat(row.dataset.avg) || 0;
+
+                years.push(year);
+                visits.push(visitsCount);
+                avgDurations.push(avgVal);
+                totalVisits += visitsCount;
+
+                if (visitsCount > maxVisits) {
+                    maxVisits = visitsCount;
+                    peakYear = year;
+                }
+            });
+
+            // Обновляем метрики
+            document.getElementById('totalVisits').innerText = totalVisits.toLocaleString();
+            document.getElementById('peakYear').innerHTML = `${peakYear}<span style="font-size: 0.8rem;"> (${maxVisits} пос.)</span>`;
+
+            const yearRange = years.length > 0 ? `${years[0]} — ${years[years.length - 1]}` : '—';
+            document.getElementById('yearRange').innerText = yearRange;
+
+            // Вычисляем средний годовой рост
+            let growthSum = 0;
+            let growthCount = 0;
+            for (let i = 1; i < visits.length; i++) {
+                if (visits[i - 1] > 0) {
+                    const growth = ((visits[i] - visits[i - 1]) / visits[i - 1]) * 100;
+                    growthSum += growth;
+                    growthCount++;
+                }
+            }
+            const avgGrowth = growthCount > 0 ? (growthSum / growthCount).toFixed(1) : '0';
+            const growthIcon = parseFloat(avgGrowth) >= 0 ? '↑' : '↓';
+            const growthColor = parseFloat(avgGrowth) >= 0 ? '#10b981' : '#ef4444';
+            document.getElementById('avgGrowth').innerHTML = `${Math.abs(avgGrowth)}% <span style="font-size: 1rem; color: ${growthColor};">${growthIcon}</span>`;
+
+            // Добавляем индикаторы тренда в таблицу
+            for (let i = 0; i < rows.length; i++) {
+                const trendCell = rows[i].querySelector('.trend-cell');
+                if (i > 0 && visits[i - 1] > 0) {
+                    const change = ((visits[i] - visits[i - 1]) / visits[i - 1]) * 100;
+                    const arrow = change >= 0 ? '↑' : '↓';
+                    const color = change >= 0 ? '#10b981' : '#ef4444';
+                    const changeAbs = Math.abs(change).toFixed(1);
+                    trendCell.innerHTML = `<span style="color: ${color}; font-weight: 600;">${arrow} ${changeAbs}%</span>`;
+                } else {
+                    trendCell.innerHTML = '<span style="color: #94a3b8;">—</span>';
+                }
+            }
+
+            // Создаем график посещений
+            const visitsCtx = document.getElementById('visitsChart').getContext('2d');
+            new Chart(visitsCtx, {
+                type: 'line',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Количество посещений',
+                        data: visits,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 3,
+                        fill: true,
+                        tension: 0.4,
+                        pointBackgroundColor: '#1e4a76',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } },
+                        tooltip: { callbacks: { label: function (context) { return `Посещений: ${context.raw.toLocaleString()}`; } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Количество посещений', font: { family: 'Inter', size: 12 } }, ticks: { callback: function (value) { return value.toLocaleString(); } } },
+                        x: { title: { display: true, text: 'Год', font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+
+            // Создаем график средней длительности
+            const durationCtx = document.getElementById('durationChart').getContext('2d');
+            new Chart(durationCtx, {
+                type: 'bar',
+                data: {
+                    labels: years,
+                    datasets: [{
+                        label: 'Среднее время (мин)',
+                        data: avgDurations,
+                        backgroundColor: 'rgba(245, 158, 11, 0.7)',
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'top', labels: { font: { family: 'Inter', size: 12 } } },
+                        tooltip: { callbacks: { label: function (context) { return `${context.raw.toFixed(1)} минут`; } } }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Время (минуты)', font: { family: 'Inter', size: 12 } } },
+                        x: { title: { display: true, text: 'Год', font: { family: 'Inter', size: 12 } } }
+                    }
+                }
+            });
+
+            // Функция показа уведомления
+            function showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.background = type === 'success' ? '#10b981' : '#ef4444';
+                notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 2500);
+            }
+
+
+            // Копирование таблицы
+            const copyBtn = document.getElementById('copyTableBtn');
+            if (copyBtn) {
+                copyBtn.addEventListener('click', async function () {
+                    const table = document.getElementById('yearsTable');
+                    const range = document.createRange();
+                    range.selectNode(table);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+
+                    try {
+                        await navigator.clipboard.writeText(window.getSelection().toString());
+                        showNotification('Таблица скопирована в буфер обмена!');
+                    } catch (err) {
+                        showNotification('Не удалось скопировать таблицу', 'error');
+                    }
+                    window.getSelection().removeAllRanges();
+                });
+            }
+
+            // Сортировка таблицы
+            let currentSortColumn = null;
+            let currentSortDirection = 'asc';
+
+            const headers = document.querySelectorAll('.years-table th[data-sort]');
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortType = header.dataset.sort;
+                    const tbody = document.getElementById('tableBody');
+                    const rowsArray = Array.from(tbody.querySelectorAll('tr'));
+
+                    if (currentSortColumn === sortType) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortColumn = sortType;
+                        currentSortDirection = 'asc';
+                    }
+
+                    rowsArray.sort((a, b) => {
+                        let aVal, bVal;
+
+                        switch (sortType) {
+                            case 'year':
+                                aVal = parseInt(a.dataset.year) || 0;
+                                bVal = parseInt(b.dataset.year) || 0;
+                                break;
+                            case 'visits':
+                                aVal = parseInt(a.dataset.visits) || 0;
+                                bVal = parseInt(b.dataset.visits) || 0;
+                                break;
+                            case 'avg':
+                                aVal = parseFloat(a.dataset.avg) || 0;
+                                bVal = parseFloat(b.dataset.avg) || 0;
+                                break;
+                            case 'min':
+                                aVal = parseFloat(a.dataset.min) || 0;
+                                bVal = parseFloat(b.dataset.min) || 0;
+                                break;
+                            case 'max':
+                                aVal = parseFloat(a.dataset.max) || 0;
+                                bVal = parseFloat(b.dataset.max) || 0;
+                                break;
+                            default:
+                                aVal = a.dataset.year || 0;
+                                bVal = b.dataset.year || 0;
+                        }
+
+                        if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+                        if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+
+                    rowsArray.forEach(row => tbody.appendChild(row));
+
+                    headers.forEach(h => {
+                        const icon = h.querySelector('.sort-icon i');
+                        if (icon) icon.className = 'fas fa-sort';
+                    });
+                    const currentIcon = header.querySelector('.sort-icon i');
+                    if (currentIcon) {
+                        currentIcon.className = `fas fa-sort-${currentSortDirection === 'asc' ? 'up' : 'down'}`;
+                    }
+                });
+            });
+
+            // Добавляем эффект при клике на строку
+            rows.forEach(row => {
+                row.addEventListener('click', function () {
+                    const year = this.dataset.year;
+                    const visitsCount = this.dataset.visits;
+                    const avgTime = this.dataset.avg;
+                    showNotification(`${year} год — ${visitsCount} посещений, среднее время: ${avgTime} мин`, 'success');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

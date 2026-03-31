@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLAP Analytics | Карты доступа</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2f7 0%, #d9e2ec 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* главная карточка */
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: fadeSlideUp 0.45s ease-out;
+        }
+
+        /* шапка с градиентом */
+        .header {
+            background: linear-gradient(112deg, #0f2b3d 0%, #1b4a6e 100%);
+            padding: 2rem 2rem 1.8rem 2rem;
+            color: white;
+            position: relative;
+        }
+
+        .header::after {
+            content: "💳";
+            font-size: 7rem;
+            opacity: 0.08;
+            position: absolute;
+            bottom: -0.5rem;
+            right: 1.5rem;
+            pointer-events: none;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(-3px);
+        }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 i {
+            font-size: 2rem;
+        }
+
+        .stats-badge {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 40px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* секция таблицы */
+        .table-wrapper {
+            padding: 2rem;
+            overflow-x: auto;
+            background: #ffffff;
+        }
+
+        /* панель поиска и фильтров */
+        .filters-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .search-input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        .search-input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            background: #f9fafc;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-group label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+        }
+
+        .status-filter {
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            background: #f9fafc;
+            cursor: pointer;
+        }
+
+        /* карточки метрик */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 1.25rem;
+            padding: 1.2rem;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .metric-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #1e4a76, #0f2b3d);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .metric-icon i {
+            font-size: 1.3rem;
+            color: white;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #475569;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+        }
+
+        .metric-value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .metric-sub {
+            font-size: 0.75rem;
+            color: #64748b;
+            margin-top: 0.3rem;
+        }
+
+        /* панель действий */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .records-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: linear-gradient(135deg, #1e4a76, #0f2b3d);
+            color: white;
+            padding: 0.7rem 1.3rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn-secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .action-btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        /* таблица */
+        .cards-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+        }
+
+        .cards-table thead tr {
+            background: #f8fafc;
+        }
+
+        .cards-table th {
+            text-align: left;
+            padding: 1rem 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f8fafc;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .cards-table th:hover {
+            background: #eef2ff;
+        }
+
+        .cards-table td {
+            padding: 1rem 1rem;
+            border-bottom: 1px solid #f0f2f5;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .cards-table tbody tr {
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .cards-table tbody tr:hover {
+            background: #fefce8;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        /* стили для ячеек */
+        .card-id {
+            font-weight: 600;
+            color: #0f2b3d;
+            font-family: monospace;
+        }
+
+        .card-number {
+            font-family: monospace;
+            font-weight: 600;
+            color: #1e4a76;
+            letter-spacing: 0.5px;
+        }
+
+        .driver-name {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .driver-name i {
+            color: #10b981;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .status-inactive {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .sort-icon {
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: fadeSlideUp 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* пагинация */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            background: white;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85rem;
+        }
+
+        .page-btn:hover {
+            background: #f1f5f9;
+        }
+
+        .page-btn.active {
+            background: #1e4a76;
+            color: white;
+            border-color: #1e4a76;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            .header {
+                padding: 1.5rem;
+            }
+            .table-wrapper {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+            .cards-table th, 
+            .cards-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+            .metric-value {
+                font-size: 1.3rem;
+            }
+            .action-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <div class="header">
+            <div class="header-top">
+                <a href="/" class="back-link">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>На главную</span>
+                </a>
+                <a href="{% url 'cards_csv' %}" class="export-btn" id="exportCsvLink">
+                    <i class="fas fa-file-csv"></i>
+                    <span>Экспорт в CSV</span>
+                    <i class="fas fa-download"></i>
+                </a>
+            </div>
+            <h1>
+                <i class="fas fa-id-card"></i>
+                Карты доступа
+            </h1>
+            <div class="stats-badge">
+                <span class="stat-item"><i class="fas fa-credit-card"></i> Управление пропусками</span>
+                <span class="stat-item"><i class="fas fa-user-check"></i> Привязка к водителям</span>
+                <span class="stat-item"><i class="fas fa-toggle-on"></i> Статус активности</span>
+            </div>
+        </div>
+        
+        <div class="table-wrapper">
+            {% if cards %}
+            <!-- метрики -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div class="metric-label">Всего карт</div>
+                    <div class="metric-value" id="totalCards">{{ cards|length }}</div>
+                    <div class="metric-sub">в системе</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="metric-label">Активные</div>
+                    <div class="metric-value" id="activeCards">—</div>
+                    <div class="metric-sub">действующие</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <div class="metric-label">Неактивные</div>
+                    <div class="metric-value" id="inactiveCards">—</div>
+                    <div class="metric-sub">заблокированы</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="metric-label">Привязано</div>
+                    <div class="metric-value" id="assignedCards">—</div>
+                    <div class="metric-sub">к водителям</div>
+                </div>
+            </div>
+
+            <!-- Панель поиска и фильтров -->
+            <div class="filters-section">
+                <div class="search-box">
+                    <div class="search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="searchInput" class="search-input" placeholder="Поиск по номеру карты или водителю..." autocomplete="off">
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fas fa-filter"></i> Статус:</label>
+                        <select id="statusFilter" class="status-filter">
+                            <option value="all">Все карты</option>
+                            <option value="active">Активные</option>
+                            <option value="inactive">Неактивные</option>
+                        </select>
+                    </div>
+                    <button id="resetFiltersBtn" class="action-btn action-btn-secondary">
+                        <i class="fas fa-undo"></i> Сбросить
+                    </button>
+                </div>
+            </div>
+
+            <!-- Панель действий -->
+            <div class="action-bar">
+                <div class="records-info">
+                    <i class="fas fa-table"></i> Показано <span id="displayedCount">0</span> из <span id="totalCount">{{ cards|length }}</span> записей
+                </div>
+                <button id="copyTableBtn" class="action-btn action-btn-secondary">
+                    <i class="fas fa-copy"></i>
+                    Копировать таблицу
+                </button>
+            </div>
+
+            <table class="cards-table" id="cardsTable">
+                <thead>
+                    <tr>
+                        <th data-sort="id"><i class="fas fa-hashtag"></i> ID <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                        <th data-sort="number"><i class="fas fa-credit-card"></i> Номер карты <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                        <th data-sort="driver"><i class="fas fa-user"></i> Водитель <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                        <th data-sort="status"><i class="fas fa-toggle-on"></i> Статус <span class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    {% for c in cards %}
+                    <tr data-id="{{ c.id_card }}" 
+                        data-number="{{ c.card_number }}" 
+                        data-driver="{% if c.driver %}{{ c.driver }}{% else %}Не привязана{% endif %}"
+                        data-status="{% if c.is_active %}active{% else %}inactive{% endif %}">
+                        <td class="card-id">
+                            <i class="fas fa-id-card"></i> {{ c.id_card }}
+                        </td>
+                        <td class="card-number">
+                            <i class="fas fa-credit-card"></i> {{ c.card_number }}
+                        </td>
+                        <td class="driver-name">
+                            {% if c.driver %}
+                            <i class="fas fa-user-circle"></i> {{ c.driver }}
+                            {% else %}
+                            <span style="color: #94a3b8;"><i class="fas fa-user-slash"></i> Не привязана</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.is_active %}
+                            <span class="status-badge status-active">
+                                <i class="fas fa-check-circle"></i> Активна
+                            </span>
+                            {% else %}
+                            <span class="status-badge status-inactive">
+                                <i class="fas fa-ban"></i> Неактивна
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- Пагинация -->
+            <div class="pagination" id="pagination"></div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-credit-card"></i>
+                <h3>Нет данных</h3>
+                <p>Информация о картах доступа отсутствует</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const allRows = Array.from(document.querySelectorAll('#tableBody tr'));
+        if (allRows.length === 0) return;
+        
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const resetBtn = document.getElementById('resetFiltersBtn');
+        const tableBody = document.getElementById('tableBody');
+        const displayedCountSpan = document.getElementById('displayedCount');
+        
+        let currentSortColumn = 'id';
+        let currentSortDirection = 'asc';
+        let currentPage = 1;
+        const rowsPerPage = 15;
+        let filteredRows = [];
+        
+        // Подсчет метрик
+        function updateMetrics(rows) {
+            const activeCount = rows.filter(row => row.dataset.status === 'active').length;
+            const inactiveCount = rows.filter(row => row.dataset.status === 'inactive').length;
+            const assignedCount = rows.filter(row => row.dataset.driver !== 'Не привязана').length;
+            
+            document.getElementById('activeCards').innerText = activeCount;
+            document.getElementById('inactiveCards').innerText = inactiveCount;
+            document.getElementById('assignedCards').innerText = assignedCount;
+        }
+        
+        // Функция показа уведомления
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.background = type === 'success' ? '#10b981' : '#ef4444';
+            notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 2500);
+        }
+        
+        // Фильтрация строк
+        function filterRows() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const statusValue = statusFilter.value;
+            
+            filteredRows = allRows.filter(row => {
+                const number = row.dataset.number.toLowerCase();
+                const driver = row.dataset.driver.toLowerCase();
+                const status = row.dataset.status;
+                
+                const matchesSearch = !searchTerm || number.includes(searchTerm) || driver.includes(searchTerm);
+                const matchesStatus = statusValue === 'all' || status === statusValue;
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            // Сортировка
+            filteredRows.sort((a, b) => {
+                let aVal = a.dataset[currentSortColumn];
+                let bVal = b.dataset[currentSortColumn];
+                
+                if (currentSortColumn === 'id') {
+                    aVal = parseInt(aVal) || 0;
+                    bVal = parseInt(bVal) || 0;
+                } else if (currentSortColumn === 'number') {
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                } else if (currentSortColumn === 'driver') {
+                    aVal = String(aVal).toLowerCase();
+                    bVal = String(bVal).toLowerCase();
+                } else if (currentSortColumn === 'status') {
+                    aVal = a.dataset.status === 'active' ? 1 : 0;
+                    bVal = b.dataset.status === 'active' ? 1 : 0;
+                }
+                
+                if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+                if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            displayedCountSpan.innerText = filteredRows.length;
+            updateMetrics(filteredRows);
+            currentPage = 1;
+            renderPage();
+        }
+        
+        // Отображение текущей страницы
+        function renderPage() {
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const pageRows = filteredRows.slice(start, end);
+            
+            tableBody.innerHTML = '';
+            pageRows.forEach(row => tableBody.appendChild(row.cloneNode(true)));
+            
+            renderPagination();
+        }
+        
+        // Отображение пагинации
+        function renderPagination() {
+            const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+            const paginationDiv = document.getElementById('pagination');
+            if (!paginationDiv) return;
+            
+            paginationDiv.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+            
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => { if (currentPage > 1) { currentPage--; renderPage(); } };
+            paginationDiv.appendChild(prevBtn);
+            
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, startPage + 4);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = 'page-btn';
+                if (i === currentPage) pageBtn.classList.add('active');
+                pageBtn.innerText = i;
+                pageBtn.onclick = () => { currentPage = i; renderPage(); };
+                paginationDiv.appendChild(pageBtn);
+            }
+            
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => { if (currentPage < totalPages) { currentPage++; renderPage(); } };
+            paginationDiv.appendChild(nextBtn);
+        }
+        
+        // Сброс фильтров
+        function resetFilters() {
+            searchInput.value = '';
+            statusFilter.value = 'all';
+            currentSortColumn = 'id';
+            currentSortDirection = 'asc';
+            filterRows();
+            
+            document.querySelectorAll('th .sort-icon i').forEach(icon => {
+                icon.className = 'fas fa-sort';
+            });
+            const defaultHeader = document.querySelector('th[data-sort="id"] .sort-icon i');
+            if (defaultHeader) defaultHeader.className = 'fas fa-sort-up';
+        }
+        
+        // Копирование таблицы
+        const copyBtn = document.getElementById('copyTableBtn');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async function() {
+                const table = document.getElementById('cardsTable');
+                const range = document.createRange();
+                range.selectNode(table);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                
+                try {
+                    await navigator.clipboard.writeText(window.getSelection().toString());
+                    showNotification('Таблица скопирована в буфер обмена!');
+                } catch (err) {
+                    showNotification('Не удалось скопировать таблицу', 'error');
+                }
+                window.getSelection().removeAllRanges();
+            });
+        }
+        
+        // Сортировка
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const sortColumn = th.dataset.sort;
+                if (currentSortColumn === sortColumn) {
+                    currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    currentSortColumn = sortColumn;
+                    currentSortDirection = 'asc';
+                }
+                filterRows();
+                
+                document.querySelectorAll('th .sort-icon i').forEach(icon => {
+                    icon.className = 'fas fa-sort';
+                });
+                const currentIcon = th.querySelector('.sort-icon i');
+                if (currentIcon) {
+                    currentIcon.className = `fas fa-sort-${currentSortDirection === 'asc' ? 'up' : 'down'}`;
+                }
+            });
+        });
+        
+        searchInput.addEventListener('input', filterRows);
+        statusFilter.addEventListener('change', filterRows);
+        resetBtn.addEventListener('click', resetFilters);
+        
+        // Инициализация
+        filterRows();
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OLAP Analytics | Сводка по водителям</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #eef2f7 0%, #d9e2ec 100%);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: fadeSlideUp 0.45s ease-out;
+        }
+
+        .header {
+            background: linear-gradient(112deg, #0f2b3d 0%, #1b4a6e 100%);
+            padding: 2rem 2rem 1.8rem 2rem;
+            color: white;
+            position: relative;
+        }
+
+        .header::after {
+            content: "👥";
+            font-size: 7rem;
+            opacity: 0.08;
+            position: absolute;
+            bottom: -0.5rem;
+            right: 1.5rem;
+            pointer-events: none;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(-3px);
+        }
+
+        .export-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 0.5rem 1.2rem;
+            border-radius: 60px;
+            color: white;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+        }
+
+        .export-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        h1 i {
+            font-size: 2rem;
+        }
+
+        .stats-badge {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 40px;
+            padding: 0.4rem 1rem;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .table-wrapper {
+            padding: 2rem;
+            overflow-x: auto;
+            background: #ffffff;
+        }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            background: linear-gradient(135deg, #1e4a76, #0f2b3d);
+            color: white;
+            padding: 0.7rem 1.3rem;
+            border-radius: 0.75rem;
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(30, 74, 118, 0.3);
+        }
+
+        .action-btn-secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        .action-btn-secondary:hover {
+            background: #e2e8f0;
+            transform: translateY(-2px);
+        }
+
+        .records-info {
+            font-size: 0.85rem;
+            color: #64748b;
+            background: #f8fafc;
+            padding: 0.5rem 1rem;
+            border-radius: 40px;
+        }
+
+        .drivers-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.9rem;
+        }
+
+        .drivers-table thead tr {
+            background: #f8fafc;
+        }
+
+        .drivers-table th {
+            text-align: left;
+            padding: 1rem 1rem;
+            font-weight: 600;
+            color: #1e293b;
+            border-bottom: 2px solid #e2e8f0;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f8fafc;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .drivers-table th:hover {
+            background: #eef2ff;
+        }
+
+        .drivers-table td {
+            padding: 1rem 1rem;
+            border-bottom: 1px solid #f0f2f5;
+            color: #334155;
+            vertical-align: middle;
+        }
+
+        .drivers-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .drivers-table tbody tr:hover {
+            background: #fefce8;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        }
+
+        .number-cell {
+            font-weight: 600;
+            font-family: 'Inter', monospace;
+        }
+
+        .driver-name {
+            font-weight: 600;
+            color: #0f2b3d;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .driver-name i {
+            color: #3b82f6;
+            font-size: 1.1rem;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #fef9e3 0%, #fff8e7 100%);
+            padding: 1rem 1.2rem;
+            border-radius: 1rem;
+            border: 1px solid #feeab6;
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #b45309;
+            margin-bottom: 0.4rem;
+            font-weight: 600;
+        }
+
+        .metric-value {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1e293b;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-size: 0.85rem;
+            z-index: 1000;
+            animation: fadeSlideUp 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header {
+                padding: 1.5rem;
+            }
+
+            .table-wrapper {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.6rem;
+            }
+
+            .drivers-table th,
+            .drivers-table td {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .metric-value {
+                font-size: 1.2rem;
+            }
+
+            .action-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        .badge-time {
+            background: #f1f5f9;
+            padding: 0.2rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+
+        .sort-icon {
+            margin-left: 0.3rem;
+            font-size: 0.7rem;
+            opacity: 0.5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="header-top">
+                    <a href="/" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        <span>На главную</span>
+                    </a>
+                    <a href="{% url 'drivers_csv' %}" class="action-btn action-btn-secondary">
+                        <i class="fas fa-file-csv"></i>
+                        <span>Экспорт в CSV</span>
+                        <i class="fas fa-download"></i>
+                    </a>
+                </div>
+                <h1>
+                    <i class="fas fa-users"></i>
+                    Сводка по водителям
+                </h1>
+                <div class="stats-badge">
+                    <span class="stat-item"><i class="fas fa-chart-line"></i> OLAP-отчёт</span>
+                    <span class="stat-item"><i class="fas fa-clock"></i> Аналитика посещений</span>
+                    <span class="stat-item"><i class="fas fa-chart-bar"></i> Временные метрики</span>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                {% if drivers %}
+                <div class="metrics">
+                    <div class="metric-card">
+                        <div class="metric-label"><i class="fas fa-user-check"></i> Всего водителей</div>
+                        <div class="metric-value" id="totalDriversCount">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label"><i class="fas fa-calendar-alt"></i> Всего посещений</div>
+                        <div class="metric-value" id="totalVisitsValue">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label"><i class="fas fa-stopwatch"></i> Среднее время (всех)</div>
+                        <div class="metric-value" id="avgAllTimeValue">—</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label"><i class="fas fa-chart-line"></i> Активных водителей</div>
+                        <div class="metric-value" id="activeDrivers">—</div>
+                    </div>
+                </div>
+
+                <div class="action-bar">
+                    <div class="records-info">
+                        <i class="fas fa-table"></i> Всего записей: <span id="displayedCount">{{ drivers|length}}</span>
+                    </div>
+                    <button id="copyTableBtn" class="action-btn action-btn-secondary">
+                        <i class="fas fa-copy"></i>
+                        Копировать таблицу
+                    </button>
+                </div>
+
+                <table class="drivers-table" id="driversTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="name"><i class="fas fa-user"></i> ФИО водителя <span class="sort-icon"><i
+                                        class="fas fa-sort"></i></span></th>
+                            <th data-sort="visits"><i class="fas fa-door-open"></i> Кол-во посещений <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="avg"><i class="fas fa-hourglass-half"></i> Среднее время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="min"><i class="fas fa-fast-backward"></i> Мин. время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                            <th data-sort="max"><i class="fas fa-fast-forward"></i> Макс. время (мин) <span
+                                    class="sort-icon"><i class="fas fa-sort"></i></span></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        {% for d in drivers %}
+                        <tr data-name="{{ d.car__driver__surname }} {{ d.car__driver__first_name }}"
+                            data-visits="{{ d.count_visits }}"
+                            data-avg="{% if d.avg_duration %}{{ d.avg_duration|floatformat:1 }}{% else %}0{% endif %}"
+                            data-min="{% if d.min_duration %}{{ d.min_duration|floatformat:0 }}{% else %}0{% endif %}"
+                            data-max="{% if d.max_duration %}{{ d.max_duration|floatformat:0 }}{% else %}0{% endif %}">
+                            <td class="driver-name">
+                                <i class="fas fa-id-card"></i>
+                                {{ d.car__driver__surname }} {{ d.car__driver__first_name }}
+                            </td>
+                            <td class="number-cell">
+                                <span class="badge-time">
+                                    <i class="fas fa-chart-simple"></i> {{ d.count_visits }}
+                                </span>
+                            </td>
+                            <td class="number-cell">
+                                {% if d.avg_duration %}
+                                {{ d.avg_duration|floatformat:1 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="number-cell">
+                                {% if d.min_duration is not None %}
+                                {{ d.min_duration|floatformat:0 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="number-cell">
+                                {% if d.max_duration and d.max_duration > 0 %}
+                                {{ d.max_duration|floatformat:0 }}
+                                {% else %}
+                                <span style="color: #94a3b8;">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-user-slash"></i>
+                    <h3>Нет данных</h3>
+                    <p>Водители не найдены или отсутствуют посещения</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rows = Array.from(document.querySelectorAll('#tableBody tr'));
+            if (rows.length === 0) return;
+
+            // Вычисляем метрики
+            let totalVisits = 0;
+            let totalAvgSum = 0;
+            let driversWithAvg = 0;
+            let activeDrivers = 0;
+            let uniqueDrivers = new Set();
+
+            rows.forEach(row => {
+                const visits = parseInt(row.dataset.visits) || 0;
+                totalVisits += visits;
+                if (visits > 0) activeDrivers++;
+
+                // Добавляем имя в Set для подсчета уникальных водителей
+                const driverName = row.dataset.name;
+                if (driverName) uniqueDrivers.add(driverName);
+
+                const avg = parseFloat(row.dataset.avg) || 0;
+                if (avg > 0) {
+                    totalAvgSum += avg;
+                    driversWithAvg++;
+                }
+            });
+
+            // Обновляем метрики
+            document.getElementById('totalDriversCount').innerText = uniqueDrivers.size;
+            document.getElementById('totalVisitsValue').innerText = totalVisits.toLocaleString();
+            document.getElementById('activeDrivers').innerText = activeDrivers;
+
+            if (driversWithAvg > 0) {
+                const overallAvg = (totalAvgSum / driversWithAvg).toFixed(1);
+                document.getElementById('avgAllTimeValue').innerHTML = overallAvg + ' мин';
+            } else {
+                document.getElementById('avgAllTimeValue').innerHTML = '—';
+            }
+
+            // Функция показа уведомления
+            function showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.style.background = type === 'success' ? '#10b981' : '#ef4444';
+                notification.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i> ${message}`;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.style.opacity = '0';
+                    setTimeout(() => notification.remove(), 300);
+                }, 2500);
+            }
+
+            // Экспорт в CSV
+            const exportBtn = document.getElementById('exportCsvBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', function () {
+                    const csvData = [];
+                    csvData.push(['ФИО водителя', 'Количество посещений', 'Среднее время (мин)', 'Мин. время (мин)', 'Макс. время (мин)']);
+
+                    rows.forEach(row => {
+                        const name = row.cells[0]?.innerText?.trim() || '';
+                        const visits = row.cells[1]?.innerText?.match(/\d+/)?.[0] || '0';
+                        let avg = row.cells[2]?.innerText?.trim() || '0';
+                        let min = row.cells[3]?.innerText?.trim() || '0';
+                        let max = row.cells[4]?.innerText?.trim() || '0';
+
+                        if (avg === '—') avg = '';
+                        if (min === '—') min = '';
+                        if (max === '—') max = '';
+
+                        csvData.push([name, visits, avg, min, max]);
+                    });
+
+                    const csvContent = csvData.map(row =>
+                        row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')
+                    ).join('\n');
+
+                    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `drivers_report_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.csv`);
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+
+                    showNotification('CSV файл успешно экспортирован!');
+                });
+            }
+
+            // Сортировка таблицы
+            let currentSortColumn = null;
+            let currentSortDirection = 'asc';
+
+            const headers = document.querySelectorAll('.drivers-table th[data-sort]');
+            headers.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortType = header.dataset.sort;
+                    const tbody = document.getElementById('tableBody');
+                    const rowsArray = Array.from(tbody.querySelectorAll('tr'));
+
+                    if (currentSortColumn === sortType) {
+                        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSortColumn = sortType;
+                        currentSortDirection = 'asc';
+                    }
+
+                    rowsArray.sort((a, b) => {
+                        let aVal, bVal;
+
+                        switch (sortType) {
+                            case 'name':
+                                aVal = a.dataset.name?.toLowerCase() || '';
+                                bVal = b.dataset.name?.toLowerCase() || '';
+                                break;
+                            case 'visits':
+                                aVal = parseInt(a.dataset.visits) || 0;
+                                bVal = parseInt(b.dataset.visits) || 0;
+                                break;
+                            case 'avg':
+                                aVal = parseFloat(a.dataset.avg) || 0;
+                                bVal = parseFloat(b.dataset.avg) || 0;
+                                break;
+                            case 'min':
+                                aVal = parseFloat(a.dataset.min) || 0;
+                                bVal = parseFloat(b.dataset.min) || 0;
+                                break;
+                            case 'max':
+                                aVal = parseFloat(a.dataset.max) || 0;
+                                bVal = parseFloat(b.dataset.max) || 0;
+                                break;
+                            default:
+                                aVal = a.dataset.name || '';
+                                bVal = b.dataset.name || '';
+                        }
+
+                        if (aVal < bVal) return currentSortDirection === 'asc' ? -1 : 1;
+                        if (aVal > bVal) return currentSortDirection === 'asc' ? 1 : -1;
+                        return 0;
+                    });
+
+                    rowsArray.forEach(row => tbody.appendChild(row));
+
+                    headers.forEach(h => {
+                        const icon = h.querySelector('.sort-icon i');
+                        if (icon) icon.className = 'fas fa-sort';
+                    });
+                    const currentIcon = header.querySelector('.sort-icon i');
+                    if (currentIcon) {
+                        currentIcon.className = `fas fa-sort-${currentSortDirection === 'asc' ? 'up' : 'down'}`;
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
